@@ -1,6 +1,6 @@
 
 class Panel{
-    constructor(width = '300px',height = '300px',label = 'Panel'){
+    constructor(width = '300px',height = '300px',label = 'Panel',pos = {top : 0 ,left : 0,bottom:0,right:0}){
         
         this.width = width
         this.height = height
@@ -11,6 +11,12 @@ class Panel{
         this.panel = document.querySelector(`#panel-${this._panelID}`)
         this.tabRow = document.querySelector(`#tab-row-${this._panelID}`)
         this.panelBody = document.querySelector(`#panel-body-${this._panelID}`)
+        this.pos = {
+            top : typeof pos.top === 'undefined' ? '' : pos.top,
+            left : typeof pos.left === 'undefined' ? '' : pos.left,
+            bottom : typeof pos.bottom === 'undefined' ? '' : pos.bottom,
+            right : typeof pos.right === 'undefined' ? '' : pos.right,
+        }
 
     }
 
@@ -44,6 +50,16 @@ class Panel{
         this.panel.style.width = this.width
         this.panel.style.height = this.height
 
+        this.panel.style.top = this.pos.top
+        this.panel.style.left = this.pos.left
+        this.panel.style.bottom = this.pos.bottom
+        this.panel.style.right = this.pos.right
+        
+        console.log( this.pos.right)
+
+
+
+
     }
 
     
@@ -55,21 +71,24 @@ class Panel{
                 ${item.element()}
             `)
 
-            document.querySelector(`#tab-button-${item._tabID}`).addEventListener('click',(e)=>{
-                document.querySelectorAll('.tab-button').forEach((item)=>{
+
+            document.querySelector(`#panel-${this._panelID} > #tab-row-${this._panelID} > #tab-button-${item._tabID}`).addEventListener('click',(e)=>{
+                
+                document.querySelectorAll(`#panel-${this._panelID} > #tab-row-${this._panelID} > .tab-button`).forEach((item)=>{
                     item.classList.remove('tab-hl')
                 })
     
-                document.querySelectorAll('.tab-page').forEach((item)=>{
+                document.querySelector(`#panel-${this._panelID} > #tab-row-${this._panelID} > #tab-button-${item._tabID}`).classList.add('tab-hl')
+
+                document.querySelectorAll(`#panel-${this._panelID} > #panel-body-${this._panelID} > .tab-page`).forEach((item)=>{
                     item.classList.add('d-none')
                 })
                 
-                if( document.querySelector(`#tab-page-${item._tabID}`)){
+                if( document.querySelector(`#panel-${this._panelID} > #panel-body-${this._panelID} > #tab-page-${item._tabID}`)){
 
-                    document.querySelector(`#tab-page-${item._tabID}`).classList.remove('d-none')
+                    document.querySelector(`#panel-${this._panelID} > #panel-body-${this._panelID} > #tab-page-${item._tabID}`).classList.remove('d-none')
                 }
 
-                document.querySelector(`#tab-button-${item._tabID}`).classList.add('tab-hl')
     
             })
 
@@ -102,11 +121,17 @@ class Tab{
     constructor(label = "css"){
         this.tab_lable = label
         this._tabID  = (Math.random() + 1).toString(36).substring(2);
+        this.isHL = false
+
+    }
+
+    setTabHl(option){
+        this.setHl = option
     }
 
     addPage(panelBody, page){
         panelBody.insertAdjacentHTML("beforeend",`
-            ${page.element()}
+            ${page.element(this.setHl)}
         `)
 
         
@@ -114,8 +139,12 @@ class Tab{
         let checkMouseStartsX = 0
         let checkMouseStartsY = 0
         let elem = null
-        
-        document.querySelectorAll('input[type=number]').forEach((item)=>{
+
+        $("#backgroundColor").focus((e)=>{
+            $('#colorpicker-backgroundColor').click()
+        })
+
+        document.querySelectorAll('input[type=number],input[type=text]').forEach((item)=>{
             item.addEventListener('mousedown',(e)=>{
                 isHoldingMouse = true
                 checkMouseStartsX = e.clientX
@@ -146,21 +175,40 @@ class Tab{
                 isHoldingMouse = false
              
             })
-
-
-
-           
         })
+
+        document.querySelectorAll('.selection').forEach((item)=>{
+        
+            item.addEventListener('wheel',(e)=>{
+                e.preventDefault(); // Prevent default scrolling behavior
+
+                var direction = e.deltaY > 0 ? 1 : -1; // Detect scrolling direction
+                var currentIndex = e.target.selectedIndex;
+                var newIndex = currentIndex + direction;
+              
+                // Ensure the new index stays within the available options
+                newIndex = Math.max(0, Math.min(newIndex, e.target.options.length - 1));
+              
+                e.target.selectedIndex = newIndex;
+               
+            })
+
+
+          
+    })
+
     }
     
     element(){
 
-        let hl = ''
+        let hl = this.isHL ? ' tab-hl' : ''
         let tabIndex = document.querySelectorAll('.tab-button').length
 
-        if(tabIndex === 0){
+        if(tabIndex === 0 && !this.isHL){
             hl = ' tab-hl'
         }
+
+        console.log(this.tab_lable,this.isHL,hl)
 
         return `
            <button class='tab-button${hl}' id='tab-button-${this._tabID}'> ${this.tab_lable} </button>
@@ -172,23 +220,24 @@ class Tab{
 
 class Page{
     constructor(tabParent,pageContent){
+        this.tab = tabParent
         this._pageID = tabParent._tabID
         this.pageContent  = pageContent 
 
     }
 
-
-    element(){
+    element(setHL = undefined){
 
         this.pageContent = this.pageContent instanceof Array ? this.pageContent.join('') : 'No Content'
 
-        let hl = 'd-none'
+        let hl = setHL ? '' : 'd-none'
         let pageIndex = document.querySelectorAll('.tab-page').length
 
-        if(pageIndex === 0){
+        if(pageIndex === 0 && typeof setHL === 'undefined'){
             hl = ''
         }
 
+        this.tab.element(setHL)
 
         return `
            <div class='tab-page ${hl}' id='tab-page-${this._pageID}'> ${this.pageContent}</div>
@@ -207,7 +256,7 @@ class Section{
     element(){
         this.content =  this.sectionContent instanceof Array ? this.sectionContent.join('') : 'No Content'
         return `
-           <div class='page-section' id='section-${this.label.toLowerCase()}'> 
+           <div class='page-section' id='section-${toKebabCase(this.label.toLowerCase())}'> 
            <h3>${this.label}</h3>
             ${this.content} 
             
@@ -224,6 +273,7 @@ class Input{
             label :  typeof option.label === 'undefined' ?  '' : option.label,
             placeholder : typeof option.placeholder === 'undefined' ?  '' : option.placeholder,
             disabled : typeof option.disabled === 'undefined' ?  false : option.disabled,
+            step : typeof option.step === 'undefined' ?  5 : option.step,
             
             max : typeof option.max === 'undefined' ?  1000 : option.max,
             min : typeof option.min === 'undefined' ?  0 : option.min,
@@ -233,35 +283,39 @@ class Input{
             showUnit : typeof option.showUnit === 'undefined' ?  true : option.showUnit,
             showColor : typeof option.showColor === 'undefined' ?  false :  option.showColor,
             showFile : typeof option.showFile === 'undefined' ?  false :  option.showFile,
-
-
-   
+            dataSet : ['fit-content','transparent','#66000000'],
+            cssUnit : typeof option.cssUnit === 'undefined' ?  ['px','%','vw','vh','vmin','vmax','em','rem','pt','in','cm','mm','pc','fr'] :  option.cssUnit,
         }
 
         this.type = type
-
-        this.cssUnits = ['px','%','vw','vh','vmin','vmax','em','rem','pt','in','cm','mm','pc','fr'];
-
+        this.cssUnits = this.option.cssUnit
         this.disableCssUnitType = ['color','file']
 
-        
-        
-   
+        this.dataSetList = ''
+
 
     }
 
-
+    dataSet(){
+        let optionSet = ''
+        this.option.dataSet.forEach(item => {
+            optionSet += `<option value="${item}">`
+        });
+        
+        this.dataSetList = `<datalist id='dataList-${this.option.id}'> ${optionSet}</datalist>`
+    }
     
     element(){
             
-      
-
         let cssUnit =  ''
         let unitOption = ''
         let defaultValue = `value='${this.option.value}'`
+        let dataset = ''
         this.cssUnits.forEach(item=>{
             cssUnit += `<option value='${item}'>${item}</option> `
         })
+
+        
         if(this.disableCssUnitType.includes(this.type)){
             this.option.showUnit = false
             defaultValue = ''
@@ -273,16 +327,25 @@ class Input{
         if(this.option.showUnit){
             unitOption = `<select class='selection-unit' id='unit-${this.option.id}'> ${cssUnit}</select>`
         }
+  
+        if(this.type === 'text' || this.type === 'color'){
+
+            this.dataSet()
+            dataset = this.dataSetList
+        }
+
+
         if(this.option.showFile){
             unitOption = `
             <label for="file-${this.option.id}" class="custom-file-input" id='file-btn-${this.option.id}'><i class="fa-solid fa-file"></i></label>
             <input type='file' style='opacity:100%;width:15%'; id='file-${this.option.id}'/>`
+            
         }
 
         return `
         <label for="${this.option.id}">${this.option.label}</label>
             <div class='form-group'>
-                <input  type='${this.type}' id='${this.option.id}' placeholder='${this.option.placeholder}'  name ='${this.option.name}' step='5' max='${this.option.max}' min='${this.option.min} '/>
+                <input  type='${this.type}'  id='${this.option.id}' placeholder='${this.option.placeholder}'  name ='${this.option.name}' step='${this.option.step}' max='${this.option.max}' min='${this.option.min} '/>
                 ${unitOption}
             </div>
             `
@@ -291,19 +354,22 @@ class Input{
 }
 
 class InputGroup{
-    constructor(label,inputSet = []){
+    constructor(label,inputSet = [] , direction = 'row'){
         this.label = label
         this.inputSet = inputSet
         this.content =  this.inputSet instanceof Array ? this.inputSet.join('') : 'No Content'
-
+        this.direction = direction
+        
     }
     element(){
         
         return `
+        <div class='group'>
         <label for="#">${this.label}</label>
-            <div class='form-group'>
+            <div class='form-group ${this.direction}'>
                     ${this.content}
             </div>
+        </div>
             `
     }
 }
@@ -363,692 +429,85 @@ class Selection{
     }
 }
 
+class LabelLayer{
+    constructor(elem,level,link,parent){
+        this.elem = elem
+        this.level = level
+        this.link = link
+        this.parent = parent
+    }
+
+    
+    element(){
+        const rainbowColors = [
+            'red',
+            'orange',
+            'yellow',
+            'green',
+            'blue',
+            'indigo',
+            'violet',
+            'pink',
+            'lightblue',
+            'lightgreen',
+            'lightyellow',
+            'lightpink',
+            'lightcyan',
+            'lightcoral',
+            'lightseagreen',
+            'lavender',
+            'gold',
+            'aqua',
+            'chartreuse',
+            'orchid'
+          ];
+          
+        return `
+        <div class='layer-item' data-linkto="${this.link}"  data-parent="${this.parent}" style='border-left:5px solid ${rainbowColors[this.level]};margin-left:${this.level*15}px' >${this.elem.tagName.toLowerCase()} | ${this.elem.className}</div>
+        `
+    }
+}
+
 
 //*-------------------------------------------------------------------------------------
 //*-----------------------------------MAIN----------------------------------------------
 //*-------------------------------------------------------------------------------------
 
+const panel = new Panel('350px','50vh','Panel',{top:'20px',right:'20px'})
 
+const panel2 = new Panel('350px','40vh','Panel2',{top:'55vh',right:'20px'})
 
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // Your code here...
+panel.render()
+panel2.render()
 
-    const panel = new Panel('350px','90vh','Panel',true)
 
-    panel.render()
+const panelElem = panel.panel
+const panelBody = panel.panelBody
+const panelTabRow = panel.tabRow
 
-    const panelElem = panel.panel
-    const panelBody = panel.panelBody
-    const panelTabRow = panel.tabRow
-    
-    const tabHtml = new Tab('html <i class="fa-solid fa-check"></i>')
-    const tabCss = new Tab('css <i class="fa-solid fa-check"></i>')
-    const tablayer = new Tab('Layer <i class="fa-solid fa-layer-group"></i>')
+const panelElem2 = panel2.panel
+const panelBody2 = panel2.panelBody
+const panelTabRow2 = panel2.tabRow
 
-    const page = new Page(tabHtml)
-    
-    const sectionSizing = new Section("Sizing",
-    [
-        new Input('number',{id:'size',name:'size',label:'size',showUnit:false}).element(),
-        new Input('number',{id:'width',name:'width',label:'W'}).element(),
-        new Input('number',{id:'height',name:'height',label:'H'}).element(),
-    ])
+const tabHtml = new Tab('html <i class="fa-solid fa-check"></i>')
+const tabCss = new Tab('css <i class="fa-solid fa-check"></i>')
+const tablayer = new Tab('Layer <i class="fa-solid fa-layer-group"></i>')
 
-    const sectionPadding= new Section("Padding",
-    [
-        new Input('number',{id:'padding',name:'padding',label:'padding <i class="fa-solid fa-border-outer"></i>'}).element(),
-        new Input('number',{id:'paddingTop',name:'paddingTop',label:'paddingTop <i class="fa-solid fa-border-top"></i>'}).element(),
-        new Input('number',{id:'paddingLeft',name:'paddingLeft',label:'paddingLeft <i class="fa-solid fa-border-left"></i>'}).element(),
-        new Input('number',{id:'paddingBottom',name:'paddingBottom',label:'paddingBottom <i class="fa-solid fa-border-bottom"></i>'}).element(),
-        new Input('number',{id:'paddingRight',name:'paddingRight',label:'paddingRight <i class="fa-solid fa-border-right"></i>'}).element(),
-    ])
+const tablayer2 = new Tab('Layer <i class="fa-solid fa-layer-group"></i>')
 
-    const sectionMargin = new Section("Margin",
-    [
 
-        new Input('number',{id:'margin',name:'margin',label:'margin <i class="fa-solid fa-border-top"></i>'}).element(),
-        new Input('number',{id:'marginTop',name:'marginTop',label:'marginTop <i class="fa-solid fa-border-top"></i>'}).element(),
-        new Input('number',{id:'marginLeft',name:'marginLeft',label:'marginLeft <i class="fa-solid fa-border-left"></i>'}).element(),
-        new Input('number',{id:'marginBottom',name:'marginBottom',label:'marginBottom <i class="fa-solid fa-border-bottom"></i>'}).element(),
-        new Input('number',{id:'marginRight',name:'marginRight',label:'marginRight <i class="fa-solid fa-border-right"></i>'}).element(),
-    ])
+tabHtml.setTabHl(true)
+tablayer2.setTabHl(true)
 
-    const sectionBorderRadius = new Section("BorderRadius",
-    [
+panel.addTab([tabHtml,tabCss,tablayer])
+panel2.addTab([tablayer])
 
-        new Input('number',{id:'borderRadius',name:'borderRadius',label:' BorderRadius <i class="fa-solid fa-border-top-left"></i>'}).element(),
-        new Input('number',{id:'borderTopLeftRadius',name:'borderTopLeftRadius',label:'TopLeft <i class="fa-solid fa-border-top-left"></i>'}).element(),
-        new Input('number',{id:'borderTopRightRadius',name:'borderTopRightRadius',label:'TopRight <i class="fa-solid fa-border-top-left fa-flip-horizontal"></i>'}).element(),
-        new Input('number',{id:'borderBottomLeftRadius',name:'borderBottomLeftRadius',label:'BottomLeft <i class="fa-solid fa-border-bottom-right  fa-flip-horizontal"></i>'}).element(),
-        new Input('number',{id:'borderBottomRightRadius',name:'borderBottomRightRadius',label:'BottomRight <i class="fa-solid fa-border-bottom-right"></i>'}).element(),
 
-    ])
 
 
-    const sectionBorder = new Section("Border",
-    [
-        new InputGroup('Border',[ 
-            new Input('number',{id:'borderWidth',name:'border',placeholder:'Width',showUnit:false}).element(),
-            new Selection(
 
-                {id:'borderStyle',name:'border'},
-                {
-                    'solid': 'solid',
-                    'dotted': 'dotted',
-                    'dashed': 'dashed',
-                    'double': 'double',
-                    'groove': 'groove',
-                    'ridge': 'ridge',
-                    'inset': 'inset',
-                    'outset': 'outset',
-                    'none': 'none',
-                    'hidden': 'hidden',
-                    
-                }
-                ).element(),
-            new Input('color', {id:'borderColor',name:'border',placeholder:'Color'}).element(),
-        ]).element(),
 
-        new InputGroup('Top',[ 
-            new Input('number',{id:'borderTopWidth',name:'borderTopWidth',placeholder:'Width',showUnit:false}).element(),
-            new Selection(
 
-                {id:'borderTopStyle',name:'borderStyle'},
-                {
-                    'solid': 'solid',
-                    'dotted': 'dotted',
-                    'dashed': 'dashed',
-                    'double': 'double',
-                    'groove': 'groove',
-                    'ridge': 'ridge',
-                    'inset': 'inset',
-                    'outset': 'outset',
-                    'none': 'none',
-                    'hidden': 'hidden',
-                    
-                }
-                ).element(),
-            new Input('color', {id:'borderTopColor',name:'borderTopColor',placeholder:'Color'}).element(),
-        ]).element(),
-
-        new InputGroup('Left',[ 
-            new Input('number',{id:'borderLeftWidth',name:'borderLeftWidth',placeholder:'Width',showUnit:false}).element(),
-            new Selection(
-
-                {id:'borderLeftStyle',name:'borderStyle'},
-                {
-                    'solid': 'solid',
-                    'dotted': 'dotted',
-                    'dashed': 'dashed',
-                    'double': 'double',
-                    'groove': 'groove',
-                    'ridge': 'ridge',
-                    'inset': 'inset',
-                    'outset': 'outset',
-                    'none': 'none',
-                    'hidden': 'hidden',
-                    
-                }
-                ).element(),
-            new Input('color', {id:'borderLeftColor',name:'borderLeftColor',placeholder:'Color',}).element(),
-
-        ]).element(),
-        new InputGroup('Bottom',[ 
-            new Input('number',{id:'borderBottomWidth',name:'borderBottomWidth',placeholder:'Width',showUnit:false}).element(),
-            new Selection(
-
-                {id:'borderBottomStyle',name:'borderStyle'},
-                {
-                    'solid': 'solid',
-                    'dotted': 'dotted',
-                    'dashed': 'dashed',
-                    'double': 'double',
-                    'groove': 'groove',
-                    'ridge': 'ridge',
-                    'inset': 'inset',
-                    'outset': 'outset',
-                    'none': 'none',
-                    'hidden': 'hidden',
-                    
-                }
-                ).element(),
-            new Input('color', {id:'borderBottomColor',name:'borderBottomColor',placeholder:'Color',}).element(),
-
-        ]).element(),
-        new InputGroup('Right',[ 
-            new Input('number',{id:'borderRightWidth',name:'borderRightWidth',placeholder:'Width',showUnit:false}).element(),
-                 new Selection(
-
-            {id:'borderRightStyle',name:'borderStyle'},
-            {
-                'solid': 'solid',
-                'dotted': 'dotted',
-                'dashed': 'dashed',
-                'double': 'double',
-                'groove': 'groove',
-                'ridge': 'ridge',
-                'inset': 'inset',
-                'outset': 'outset',
-                'none': 'none',
-                'hidden': 'hidden',
-                
-            }
-            ).element(),
-            new Input('color', {id:'borderRightColor',name:'borderRightColor',placeholder:'Color',}).element(),
-
-        ]).element(),
-
-
-    ])
-
-
-
-    const sectionBorderTestSelection = new Section("Border",
-    [
-        new Selection(
-
-        {id:'borderSide',name:'borderSide',label:'Side'},
-        {
-            'all': 'all',
-            'top': 'top',
-            'bottom': 'bottom',
-            'left': 'left',
-            'right': 'right'}
-        ).element(),
-
-        new Selection(
-
-            {id:'borderStyle',name:'borderStyle'},
-            {
-                'solid': 'solid',
-                'dotted': 'dotted',
-                'dashed': 'dashed',
-                'double': 'double',
-                'groove': 'groove',
-                'ridge': 'ridge',
-                'inset': 'inset',
-                'outset': 'outset',
-                'none': 'none',
-                'hidden': 'hidden',
-                
-            }
-            ).element(),
-
-        new Input('number',{id:'borderWidth',name:'borderWidth',label:'Border Width'}).element(),
-        new Input('color',{id:'borderColor',name:'borderColor',label:'Border Color'}).element(),
-    ])
-
-
-    const sectionBackground = new Section("Background",
-    [
-
-        new Input('text',{id:'backgroundColor',name:'backgroundColor',label:'Background Color',showUnit:false,showColor:true}).element(),
-        new Input('text',{id:'backgroundImage',name:'backgroundImage',label:'background image',showFile:true}).element(),
-
-
-        new InputGroup('background Position',[ 
-,
-                new Input('number',{id:'backgroundPositionX',name:'backgroundPositionX',max:5000,min:-5000}).element(),
-                new Input('number',{id:'backgroundPositionY',name:'backgroundPositionY',max:5000,min:-5000}).element(),
-
-            ]).element(),
-            
-            
-     /*    new InputGroup('',[ 
-
-            new Selection(
-                {id:'backgroundPositionX',name:'backgroundPositionX'},
-                {
-                    'left': 'left',
-                    'center': 'center',
-                    'right': 'right',
-
-                }
-            ).element(),
-
-            new Selection(
-                {id:'backgroundPositionY',name:'backgroundPositionY'},
-                {
-                    'top': 'top',
-                    'center': 'center',
-                    'bottom' : 'bottom',
-
-                }
-            ).element(),
-
-        ]).element(), */
-
-        
-
-        new Selection(
-
-            {id:'backgroundRepeat',name:'backgroundRepeat',label:'Background Repeat'},
-            {
-                'no-repeat': 'no-repeat',
-                'repeat': 'repeat',
-            }
-            ).element(),
-
-            new Input('number',{id:'backgroundSize',name:'backgroundSize',max:5000,min:-5000}).element(),
-
-     /*        new InputGroup('background Size',[ 
-                new Input('number',{id:'backgroundSize',name:'backgroundSize',placeholder:'Width',showUnit:false}).element(),
-                   
-            new Selection(
-                {id:'backgroundSize',name:'backgroundSize'},
-                {
-                    'cover': 'cover',
-                    'contain': 'contain',
-                }
-                ).element(),
-        
-            ]).element(), */
-
-
-    ])
-
-    const sectionBorderTest = new Section("Background",
-    [
-        new Selection(
-
-        {id:'side',name:'side',label:'Side'},
-        {
-            'all': '<i class="fa-solid fa-border-outer"></i>',
-            'top': '<i class="fa-duotone fa-border-top"></i>',
-            'bottom': '<i class="fa-duotone fa-border-bottom"></i>',
-            'left': '<i class="fa-duotone fa-border-left"></i>',
-            'right': '<i class="fa-duotone fa-border-right"></i>'}
-        ).elementBox(),
-
-        new Input('number',{id:'borderWidth',name:'borderWidth',label:'Border Width'}).element(),
-        new Input('number',{id:'heigth',name:'heigth',label:'Heigth'}).element(),
-    ])
-
-
-    page.pageContent = [
-        sectionSizing.element(),
-        sectionBackground.element(),
-        sectionPadding.element(),
-        sectionMargin.element(),
-        sectionBorderRadius.element(),
-        sectionBorder.element(),
-    ]
-    
-    panel.addTab([tabHtml,tabCss,tablayer])
-    tabHtml.addPage(panelBody,page)
-
-
-    //*---------------------------------------------------------------------------------------------
-
-
-    function splitValue(value) {
-        const match = value.match(/^(\d+\.?\d*)(\D*)$/);
-        return {
-          number: parseFloat(match[1]),
-          unit: match[2]
-        };
-      }
-      
-
-
-   
-      function setColor(styles, cssProp){
-        if (styles.backgroundColor === 'rgba(0, 0, 0, 0)'){
-            console.log('nocolor')
-            return 'transparent'
-        }else if(checkColorFormat(styles.getPropertyValue(cssProp)) === 'rgb'){
-            return rgbToHex(styles.getPropertyValue(cssProp))
-        }else{
-            return  styles.getPropertyValue(cssProp)
-        }
-      }
-
-
-      
-      function hasParentWithName(element, parentName = 'panel') {
-        var parent = element.parentElement;
-        while (parent) {
-          if (parent.className.toLowerCase() === parentName.toLowerCase()) {
-            return true;
-          }
-          parent = parent.parentElement;
-        }
-        return false;
-      }
-
-      function getImageURL(str) {
-        const matches = str.match(/\((.*?)\)/);
-        return matches && matches.length > 1 ? matches[1].replace(/"/g, '') : null;
-      }
-   
-      function ishtml(url) {
-        console.log(url)
-        const imageExtensions = ['.html'];
-        const extension = url && url.split('.').pop().toLowerCase();
-        return imageExtensions.includes(`.${extension}`);
-      }
-
-      function isImageUrl(url) {
-        console.log(url)
-        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg'];
-        const extension = url && url.split('.').pop().toLowerCase();
-        console.log(imageExtensions.includes(`.${extension}`))
-        return imageExtensions.includes(`.${extension}`);
-      }
-
-      function openFileDialog(e){
-
-        console.log(e)
-    }
-
-      async function isImageUrl2(url) {
-        try {
-          const response = await fetch(url, { method: 'HEAD' });
-          if (response.ok) {
-            const contentType = response.headers.get('Content-Type');
-            return contentType && contentType.startsWith('image/');
-          }
-        } catch (error) {
-          console.error('Error occurred while checking image URL:', error);
-        }
-        
-        return false;
-      }
-      //*--------------------------------------------------------------------------------------------------
-      //*--------------------------------------------------------------------------------------------------
-      //*--------------------------------------------------------------------------------------------------
-
-
-      let spVal =  splitValue
-      let element , parent ,styles
-
-        $(window).click(e=>{
-            
-            if((!hasParentWithName(e.target) && e.target.tagName !== "HTML")){
-                element = e.target;
-                parent = element.parentElement 
-                styles = window.getComputedStyle(element);
-            }else{
-                return 0
-            }
-
-            
-
-            if(!element) return 0
-
-         
-            let cssArr = 
-            [
-                'width','height',
-                'padding',
-                'paddingTop','paddingLeft','paddingBottom','paddingRight',
-
-                'margin',
-                'marginTop','marginLeft','marginBottom','marginRight',
-
-                'borderWidth',
-                'borderTopWidth','borderLeftWidth','borderBottomWidth','borderRightWidth',
-                'borderTopStyle','borderLeftStyle','borderBottomStyle','borderRightStyle',
-
-                'borderRadius',
-                'borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius',
-
-
-            ]
-
-            let cssImageArr =[
-                'backgroundImage',
-            ]
-            
-
-            // * element.style : camelCase
-            // * Input Selecter : camelCase
-            // * styles : kebab-case
-            
-            
-            cssArr.forEach((item,i)=>{
-
-                let camelCaseText = toCamelCase(item)
-                let kebabCaseText = toKebabCase(item)
-
-
-              try{
-                if(!$(`#${item}`)[0].className.includes('selection')){
-
-                    $(`#${camelCaseText}`).val(  element.style[camelCaseText] !== '' ? spVal(element.style[camelCaseText]).number : spVal(styles.getPropertyValue(`${kebabCaseText}`)).number );
-                    $(`#unit-${camelCaseText}`).val(  element.style[camelCaseText] !== '' ? spVal(element.style[camelCaseText]).unit : spVal(styles.getPropertyValue(`${kebabCaseText}`)).unit );
-
-                }else{
-                    $(`#${camelCaseText}`).val(  element.style[camelCaseText] !== '' ? element.style[camelCaseText] : styles.getPropertyValue(`${kebabCaseText}`) );
-                }
-              }catch(e){
-                console.log(e)
-                console.log(kebabCaseText)
-                console.error(item,styles.getPropertyValue(`${kebabCaseText}`))
-              }
-
-            })
-
-            cssImageArr.forEach((item)=>{
-
-                let camelCaseText = toCamelCase(item)
-                let kebabCaseText = toKebabCase(item)
-
-                $(`#${camelCaseText}`).val(!ishtml(getImageURL(styles.getPropertyValue(`${kebabCaseText}`))) ? getImageURL(styles.getPropertyValue(`${kebabCaseText}`)) : '' )
-            })
-
-          /*   console.log(element.style)
-            
-            console.log(styles.getPropertyValue(`${'background-color'}`))
- */ 
-           /*  $('#borderColor').val(setColor(styles,'border-color')); */
-
-            $('#borderTopColor').val($('#borderColor').val())
-            $('#borderLeftColor').val($('#borderColor').val())
-            $('#borderBottomColor').val($('#borderColor').val())
-            $('#borderRightColor').val($('#borderColor').val())
-            
-
-            $('#backgroundColor').val(setColor(styles,'background-color'));
-            $('#colorpicker-backgroundColor').val(setColor(styles,'background-color'));
-
-            
-
-
-        })
-
-    
-        let elemInput 
-        $(window).on('mouseup mousemove mousedown change input',(e)=>{
-
-            if(!element) return 0
-            if(e.type === 'mousedown') elemInput = e.target
-
-            //* SIZING --------------------------------------------------------------------------
-            if(elemInput && elemInput.id === 'size'){
-
-                element.style.width =   $('#size').val()+$('#unit-size').val()
-                element.style.height =   $('#size').val()+$('#unit-size').val()
-
-                $('#width').val( $('#size').val())
-                $('#height').val( $('#size').val())
-
-            }
-
-
-            element.style.width =   $('#width').val()+$('#unit-width').val()
-            element.style.height =   $('#height').val()+$('#unit-height').val()
-
-       
-
-            //* PADDING --------------------------------------------------------------------------
-         
-            if(elemInput && elemInput.id === 'padding'){
-
-                element.style.paddingTop =   $('#padding').val()+$('#unit-padding').val()
-                element.style.paddingLeft =   $('#padding').val()+$('#unit-padding').val()
-                element.style.paddingBottom =   $('#padding').val()+$('#unit-padding').val()
-                element.style.paddingRight =   $('#padding').val()+$('#unit-padding').val()
-
-                $('#paddingTop').val($('#padding').val())
-                $('#paddingLeft').val($('#padding').val())
-                $('#paddingBottom').val($('#padding').val())
-                $('#paddingRight').val($('#padding').val())
-            }
-
-            element.style.paddingTop =   $('#paddingTop').val()+$('#unit-paddingTop').val()
-            element.style.paddingLeft =   $('#paddingLeft').val()+$('#unit-paddingLeft').val()
-            element.style.paddingBottom =   $('#paddingBottom').val()+$('#unit-paddingBottom').val()
-            element.style.paddingRight =   $('#paddingRight').val()+$('#unit-paddingRight').val()
-
-            //* MARGIN --------------------------------------------------------------------------
-
-        
-         
-            if(elemInput && elemInput.id === 'margin'){
-
-                element.style.marginTop =   $('#margin').val()+$('#unit-margin').val()
-                element.style.marginLeft =   $('#margin').val()+$('#unit-margin').val()
-                element.style.marginBottom =   $('#margin').val()+$('#unit-margin').val()
-                element.style.marginRight =   $('#margin').val()+$('#unit-margin').val()
-
-                $('#marginTop').val($('#margin').val())
-                $('#marginLeft').val($('#margin').val())
-                $('#marginBottom').val($('#margin').val())
-                $('#marginRight').val($('#margin').val())
-            }
-
-            element.style.marginTop =   $('#marginTop').val()+$('#unit-marginTop').val()
-            element.style.marginLeft =   $('#marginLeft').val()+$('#unit-marginLeft').val()
-            element.style.marginBottom =   $('#marginBottom').val()+$('#unit-marginBottom').val()
-            element.style.marginRight =   $('#marginRight').val()+$('#unit-marginRight').val()
-
-         //*--------------------------------------------------------------------------
-    
-         
-
-         if(elemInput && elemInput.id === 'borderRadius'){
-
-             element.style.borderTopLeftRadius       =   $('#borderRadius').val()+$('#unit-borderRadius').val()
-             element.style.borderTopRightRadius      =   $('#borderRadius').val()+$('#unit-borderRadius').val()
-             element.style.borderBottomLeftRadius    =   $('#borderRadius').val()+$('#unit-borderRadius').val()
-             element.style.borderBottomRightRadius   =   $('#borderRadius').val()+$('#unit-borderRadius').val()
-
-             $('#borderTopLeftRadius').val($('#borderRadius').val())
-             $('#borderTopRightRadius').val($('#borderRadius').val())
-             $('#borderBottomLeftRadius').val($('#borderRadius').val())
-             $('#borderBottomRightRadius').val($('#borderRadius').val())
-         }
-
-         element.style.borderTopLeftRadius       =   $('#borderTopLeftRadius').val()+$('#unit-borderTopLeftRadius').val()
-         element.style.borderTopRightRadius      =   $('#borderTopRightRadius').val()+$('#unit-borderTopRightRadius').val()
-         element.style.borderBottomLeftRadius    =   $('#borderBottomLeftRadius').val()+$('#unit-borderBottomLeftRadius').val()
-         element.style.borderBottomRightRadius   =   $('#borderBottomRightRadius').val()+$('#unit-borderBottomRightRadius').val()
-
-            //*--------------------------------------------------------------------------
-
-
-            if(elemInput && elemInput.name === 'border'){
-
-                element.style.border =   `${$('#borderWidth').val()}px ${$('#borderStyle').val()} ${$('#borderColor').val()}`
-
-                $('#borderTopWidth').val($('#borderWidth').val())
-                $('#borderLeftWidth').val($('#borderWidth').val())
-                $('#borderBottomWidth').val($('#borderWidth').val())
-                $('#borderRightWidth').val($('#borderWidth').val())
-
-                $('#borderTopStyle').val($('#borderStyle').val())
-                $('#borderLeftStyle').val($('#borderStyle').val())
-                $('#borderBottomStyle').val($('#borderStyle').val())
-                $('#borderRightStyle').val($('#borderStyle').val())
-
-                $('#borderTopColor').val($('#borderColor').val())
-                $('#borderLeftColor').val($('#borderColor').val())
-                $('#borderBottomColor').val($('#borderColor').val())
-                $('#borderRightColor').val($('#borderColor').val())
-            }
-
-            element.style.borderTop =  `${$('#borderTopWidth').val()}px ${$('#borderTopStyle').val()} ${$('#borderTopColor').val()}`
-            element.style.borderLeft =  `${$('#borderLeftWidth').val()}px ${$('#borderLeftStyle').val()} ${$('#borderLeftColor').val()}`
-            element.style.borderBottom =  `${$('#borderBottomWidth').val()}px ${$('#borderBottomStyle').val()} ${$('#borderBottomColor').val()}`
-            element.style.borderRight =  `${$('#borderRightWidth').val()}px ${$('#borderRightStyle').val()} ${$('#borderRightColor').val()}`
-
-
- /*            element.style.borderLeft `${$('#borderWidth').val()}px ${$('#borderStyle').val()} ${$('#borderColor').val()}`
-            element.style.borderBottom =  `${$('#borderWidth').val()}px ${$('#borderStyle').val()} ${$('#borderColor').val()}`
-            element.style.borderRight = `${$('#borderWidth').val()}px ${$('#borderStyle').val()} ${$('#borderColor').val()}` */
-
-
-            //*--------------------------------------------------------------------------
-
-           /*  let borderPropSide = $('#borderSide').val() 
-                borderPropSide = borderPropSide === 'all' ? '' : capitalizeWord(borderPropSide)
-
-            let borderPropWidth = `border${borderPropSide}Width`
-            let borderPropColor = `border${borderPropSide}Color`
-            let borderPropStyle = `border${borderPropSide}Style`
-
-            element.style[borderPropColor] = $("#borderColor").val();
-            element.style[borderPropStyle] = $("#borderStyle").val();
-            element.style[borderPropWidth] = $("#borderWidth").val()+$("#unit-borderWidth").val(); */
-            
-
-            //*--------------------------------------------------------------------------
-
-            if(e.type === 'input' && e.target.id === 'colorpicker-backgroundColor'){
-                $("#backgroundColor").val($("#colorpicker-backgroundColor").val())
-            }
-            element.style.backgroundColor = $("#backgroundColor").val()
-
-            element.style.backgroundRepeat = $("#backgroundRepeat").val()
-          /*   element.style.backgroundSize = $("[name='backgroundSize']").val() */
-            element.style.backgroundSize = `${$("#backgroundSize").val()}${$("#unit-backgroundSize").val()}`
-            element.style.backgroundPosition = `${$("#backgroundPositionX").val()+$("#unit-backgroundPositionX").val()} ${$("#backgroundPositionY").val()+$("#unit-backgroundPositionY").val()}`
-
-            if(e.target.type === 'file' && e.target.id === 'file-backgroundImage' && e.type === 'input'){
-                $("#backgroundImage").val(e.target.files ? e.target.files[0].name : '')
-                if(e.target.files[0]){
-
-                    let url = `../Generator/image/${e.target.files[0].name}`
-                    $("#backgroundImage").val(url)
-                    element.style.backgroundImage = `url('${ $("#backgroundImage").val()}')`
-                }
-            }
-
-
-            element.style.backgroundImage = `url('${ $("#backgroundImage").val()}')`
-         
-
-            /* backgroundColor 
-            backgroundImage
-            backgroundRepeat
-            backgroundPosition
-            backgroundSize
-            backgroundAttachment
-            backgroundOrigin
-            backgroundClip
-            backgroundBlendMode
-            background */
-
-
-       /*      if(elemInput && elemInput.id === 'select-boder-size'){
-            
-            } */
-
-
-
-        })
-
-
-
-
-
-  
-
-
-
-
-});
 
 
