@@ -1,9 +1,6 @@
 
 
-    // Your code here...
-
-
-    const page = new Page(tabHtml)
+    const page = new Page(tabCss)
     
     const sectionSizing = new Section("Sizing",
     [
@@ -388,7 +385,6 @@
             ).element(),
     ])
 
-
     page.pageContent = [
         sectionSizing.element(),
         sectionBackground.element(),
@@ -400,7 +396,11 @@
         sectionBorder.element(),
     ]
     
-    tabHtml.addPage(panelBody,page)
+    
+    tabCss.addPage(page)
+
+
+
 
 
     //*---------------------------------------------------------------------------------------------
@@ -653,7 +653,7 @@
     
         let elemInput 
 
-        $('body:not(.panel > *)').click(e=>{
+        $('body:not(.panel > *)').on(('click'),e=>{
             let link = e.target.dataset.link
 
             initValue(e)
@@ -664,6 +664,14 @@
             $(".hl-element").removeClass('hl-element')
             e.target.classList.add('hl-element')
             
+        })
+
+        $('body:not(.panel > *)').on(('mouseover'),e=>{
+            e.target.classList.add('hl-temp-element')
+            
+        })
+        $('body:not(.panel > *)').on(('mouseout'),e=>{
+            e.target.classList.remove('hl-temp-element')
         })
 
         $(window).on('mouseup mousemove mousedown change input wheel',(e)=>{

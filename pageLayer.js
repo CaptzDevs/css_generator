@@ -1,11 +1,10 @@
 
 
-    // Your code here...
+
+const pageLayer = new Page()
+const pageLayer2 = new Page()
 
 
-
-
-    const pageLayer = new Page(tablayer)
     
     let layerMap = []
 
@@ -29,6 +28,7 @@
       
         /* console.log(indent + tagName+" | ",element.className,"Lvl : "+level); */
         const children = element.children;
+        
 
 
         layerMap.push(new LabelLayer(element,level,LINK,parent).element())
@@ -42,44 +42,61 @@
         }
       }
       
-      const htmlElement = document.querySelector('html');
-      const excludedTags = ['script','head'];
-      const excludedClasses = ['panel'];
-
-      printHTMLMap(htmlElement, '', excludedTags,excludedClasses);
 
 
+      function renderLayerMap(){
 
-      const sectionSizing2 = new Section("Layer Map",layerMap)
-
-      pageLayer.pageContent = [
-        sectionSizing2.element(),
-    ]
-
-
-    tablayer2.addPage(panelBody2,pageLayer)
-
-
-      $('.layer-item').click((e)=>{
-        let link = e.target.dataset.linkto
- 
-        if(link !== 'null'){
-          let selectedLayer = $(`[data-link=${link}]`)
-          
-          initValue(false,selectedLayer[0])
-          
-          $(".layer-item").removeClass('hl-layer')
-
-          e.target.classList.add('hl-layer')
-          
-          $(".hl-element").removeClass('hl-element')
-          
-          selectedLayer.addClass('hl-element')
-          
+        if(panelLayer.tabs['layer'].pages[0]){
+          panelLayer.tabs['layer'].pages[0].remove() 
         }
+        
+        const sectionSizing2 = new Section("Layer Map",layerMap)
 
+        const htmlElement = document.querySelector('html');
+        const excludedTags = ['script','head'];
+        const excludedClasses = ['panel'];
+  
+        printHTMLMap(htmlElement, '', excludedTags,excludedClasses);
 
-    })
+        
+        pageLayer.pageContent = [
+          sectionSizing2.element(),
+        ]
+
+        pageLayer2.pageContent = [
+          sectionSizing2.element(),
+        ]
+      
+  
+      tablayer.addPage(pageLayer)
+      tablayer2.addPage(pageLayer2)
+
+      
+
+      layerMap = []
+      $('.layer-item').click((e)=>{
+          let link = e.target.dataset.linkto
+   
+          if(link !== 'null'){
+            let selectedLayer = $(`[data-link=${link}]`)
+            
+            initValue(false,selectedLayer[0])
+            
+            $(".layer-item").removeClass('hl-layer')
+  
+            e.target.classList.add('hl-layer')
+            
+            $(".hl-element").removeClass('hl-element')
+            
+            selectedLayer.addClass('hl-element')
+            
+          }
+  
+  
+      })
+      }
+
+      renderLayerMap()
 
 
 

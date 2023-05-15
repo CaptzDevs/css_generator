@@ -80,6 +80,7 @@
     justify-content: flex-start;
     flex-direction: column;
     gap: 10px;
+    font-size: .8rem;
 }
 .page-section label{
     font-size: .8rem;
@@ -212,12 +213,23 @@ i{
     background: #0000004b;
   
   }
-  .hl-element{
-    border: 5px dashed rgb(0, 81, 255) !important;
+
+  .hl-temp-element{
+    outline: 5px solid rgb(34, 129, 254) !important;
+    outline-offset: 10px;
   }
+  .hl-element{
+    outline: 5px solid rgb(34, 129, 254) !important;
+    outline-offset: 5px;
+  }
+
+
   
   .hl-layer{
     background: #4a4a4a79;
+}
+.moving{
+    position: absolute;
 }
   
   

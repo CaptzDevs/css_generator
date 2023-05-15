@@ -18,16 +18,13 @@ class Panel{
             right : typeof pos.right === 'undefined' ? '' : pos.right,
         }
 
+        this.tabs = []
+        this.tabCollection = {}
+
+
     }
 
-    getElem(){
 
-        return {
-            panel : document.querySelector(`#panel-${this._panelID}`),
-            tabRow : document.querySelector(`#tab-row-${this._panelID}`),
-            panelBody : document.querySelector(`#panel-body-${this._panelID}`),
-        }
-    }
 
     render(){
 
@@ -54,18 +51,21 @@ class Panel{
         this.panel.style.left = this.pos.left
         this.panel.style.bottom = this.pos.bottom
         this.panel.style.right = this.pos.right
-        
-        console.log( this.pos.right)
-
-
-
 
     }
 
     
     addTab(tabElem){
-      
-        tabElem.forEach(item => {
+
+        this.tabs = tabElem.length > 0 ? [...tabElem] : this.tabs
+
+        this.tabs.forEach((item,i)=>{
+                this.tabs[item.tab_lable.toLowerCase()] = item
+        })
+        
+        
+        this.tabs.forEach(item => {
+            item.panel = this
 
             this.tabRow.insertAdjacentHTML("beforeend",`
                 ${item.element()}
@@ -94,21 +94,35 @@ class Panel{
 
         });
 
-      
-
-        
-
        /*  if(pageElem){
             this.addPage(pageElem)
         }else{
             this.addPage(new Page(tabElem))
         } */
+    }
 
+    clear(){
+        let chlid = this.panel.children.length
 
+        for (let i = 0 ; i < chlid; i++){
+            this.panel.children[0].remove()
+        }
+    }
 
+    clearBody(){
+        let chlid = this.panelBody.children.length
 
-   
+        for (let i = 0 ; i < chlid; i++){
+            this.panelBody.children[0].remove()
+        }
+    }
 
+    clearTabRow(){
+        let chlid = this.tabRow.children.length
+
+        for (let i = 0 ; i < chlid; i++){
+            this.tabRow.children[0].remove()
+        }
     }
 
 
@@ -118,22 +132,31 @@ class Panel{
 }
 
 class Tab{
-    constructor(label = "css"){
+    constructor(label = "css",logo){
         this.tab_lable = label
+        this.logo = logo
         this._tabID  = (Math.random() + 1).toString(36).substring(2);
         this.isHL = false
-
+        this.panel = null
+        this.pages = []
     }
 
     setTabHl(option){
         this.setHl = option
     }
 
-    addPage(panelBody, page){
-        panelBody.insertAdjacentHTML("beforeend",`
+    addPage(page){
+        this.pages = [...this.pages,page]
+
+
+        page.panel = this.panel
+        page.tab = this
+
+        this.panel.panelBody.insertAdjacentHTML("beforeend",`
             ${page.element(this.setHl)}
         `)
 
+        page.page = document.querySelector(`#tab-page-${this._tabID}`)
         
         let isHoldingMouse = false
         let checkMouseStartsX = 0
@@ -204,14 +227,14 @@ class Tab{
         let hl = this.isHL ? ' tab-hl' : ''
         let tabIndex = document.querySelectorAll('.tab-button').length
 
-        if(tabIndex === 0 && !this.isHL){
-            hl = ' tab-hl'
-        }
 
-        console.log(this.tab_lable,this.isHL,hl)
+      /*   if(tabIndex === 0 && !this.isHL){
+            hl = ' tab-hl'
+        } */
+
 
         return `
-           <button class='tab-button${hl}' id='tab-button-${this._tabID}'> ${this.tab_lable} </button>
+           <button class='tab-button${hl}' id='tab-button-${this._tabID}'> ${this.tab_lable} ${this.logo} </button>
         `
     
     }
@@ -219,31 +242,61 @@ class Tab{
 }
 
 class Page{
-    constructor(tabParent,pageContent){
-        this.tab = tabParent
-        this._pageID = tabParent._tabID
+    constructor(pageContent){
+        this.tab = null
+        this._pageID = null
         this.pageContent  = pageContent 
+        this.page = null
+
 
     }
 
     element(setHL = undefined){
 
+        this._pageID = this.tab._tabID
+  
+
+
+        let isFocus = this.tab.isHL  
         this.pageContent = this.pageContent instanceof Array ? this.pageContent.join('') : 'No Content'
 
-        let hl = setHL ? '' : 'd-none'
+        let hl = isFocus ? '' : 'd-none'
         let pageIndex = document.querySelectorAll('.tab-page').length
-
+/* 
         if(pageIndex === 0 && typeof setHL === 'undefined'){
             hl = ''
-        }
+        } */
 
-        this.tab.element(setHL)
 
         return `
            <div class='tab-page ${hl}' id='tab-page-${this._pageID}'> ${this.pageContent}</div>
         `
 
     }
+
+    clear(){
+        let chlid = this.page.children.length
+
+        for (let i = 0 ; i < chlid; i++){
+            this.page.children[0].remove()
+        }
+    }
+
+    remove(){
+        if(this.page){
+
+            this.page.remove()
+        }
+    }
+
+    hide(){
+        this.page.classList.add('d-none')
+    }
+    show(){
+        this.page.classList.remove('d-none')
+   
+    }
+    
 }
 
 class Section{
@@ -463,51 +516,11 @@ class LabelLayer{
           ];
           
         return `
-        <div class='layer-item' data-linkto="${this.link}"  data-parent="${this.parent}" style='border-left:5px solid ${rainbowColors[this.level]};margin-left:${this.level*15}px' >${this.elem.tagName.toLowerCase()} | ${this.elem.className}</div>
+        <div class='layer-item' data-linkto="${this.link}" 
+         data-parent="${this.parent}" 
+         style='border-left:5px solid ${rainbowColors[this.level]};margin-left:${this.level*15}px'>
+            ${this.elem.tagName.toLowerCase()} | ${this.elem.className.replace(/hl-temp-element|hl-element/g, "")}
+         </div>
         `
     }
 }
-
-
-//*-------------------------------------------------------------------------------------
-//*-----------------------------------MAIN----------------------------------------------
-//*-------------------------------------------------------------------------------------
-
-const panel = new Panel('350px','50vh','Panel',{top:'20px',right:'20px'})
-
-const panel2 = new Panel('350px','40vh','Panel2',{top:'55vh',right:'20px'})
-
-
-panel.render()
-panel2.render()
-
-
-const panelElem = panel.panel
-const panelBody = panel.panelBody
-const panelTabRow = panel.tabRow
-
-const panelElem2 = panel2.panel
-const panelBody2 = panel2.panelBody
-const panelTabRow2 = panel2.tabRow
-
-const tabHtml = new Tab('html <i class="fa-solid fa-check"></i>')
-const tabCss = new Tab('css <i class="fa-solid fa-check"></i>')
-const tablayer = new Tab('Layer <i class="fa-solid fa-layer-group"></i>')
-
-const tablayer2 = new Tab('Layer <i class="fa-solid fa-layer-group"></i>')
-
-
-tabHtml.setTabHl(true)
-tablayer2.setTabHl(true)
-
-panel.addTab([tabHtml,tabCss,tablayer])
-panel2.addTab([tablayer])
-
-
-
-
-
-
-
-
-
